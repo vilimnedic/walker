@@ -30,11 +30,11 @@ functions {
     
     real log2pi = log(2*pi()); 
         
-    for (t in 1:n) {
+    for (t in 1:n) { // forward filtering
       
       F[t] = quad_form(P[1:k, 1:k], xreg[, t]) + Ht[t];
       
-      if (y_miss[t] == 0) {
+      if (y_miss[t] == 0) { 
         v[t] = y[t] - dot_product(xreg[, t], head(x, k));
         K[, t] = P[1:m, 1:k] * xreg[, t] / F[t];
         x = Tt * (x + K[,t] * v[t]);
@@ -42,7 +42,7 @@ functions {
         for (i in 1:m) {
           P[i, i] += Rt[i, t];
         }
-        loglik[t, 1] = -0.5 * (log2pi + log(F[t]) + v[t] * v[t] / F[t]);
+        loglik[t, 1] = -0.5 * (log2pi + log(F[t]) + v[t] * v[t] / F[t]); // Laplace normalfördelningsfunktion
       } else {
         x = Tt * x;
         P = quad_form_sym(P, Tt');
@@ -52,7 +52,7 @@ functions {
       }
     }
     
-    r[,n+1] = rep_vector(0.0, m);
+    r[,n+1] = rep_vector(0.0, m); // backward disturbance smoother 
     for (tt in 1:n) {
       int t = n + 1 - tt;
       vector[m] tmp = r[, t+1];
@@ -65,7 +65,7 @@ functions {
       }
     }
     
-    tmpr = r[,1];
+    tmpr = r[,1]; 
     r[,1] = a1 + P1 * tmpr;
     for (t in 2:n) {
       vector[m] tmp = r[,t-1];
@@ -76,12 +76,14 @@ functions {
     // add a correction term
     if (distribution == 1) {
       for(t in 1:n) {
-        if (y_miss[t] == 0){
+        if (y_miss[t] == 0) {
           real xbeta_rw = dot_product(xreg[,t], r[1:k, t]); // x_t^T * \beta_t
+          // y_t 
+          // eps nb, kanske även 85 
           loglik[t, 2] = y_original[t] * (xbeta_rw + xbeta_fixed[t]) - // y_t * \theta_t
           u[t] * exp(xbeta_rw + xbeta_fixed[t]) + // -u_t * exp(\theta_t)
           0.5 * (y[t] - xbeta_rw)^2 / Ht[t]; // -(-1/2) y_pseudo - \theta eller xbeta_rw? // eq Durbin 1997 26
-        } // y_t = Z_t a_t + eps_t, eps_t ~ N(0,H_t) H_t = variance matrix of noise term 
+        } // y_t^* = Z_t a_t + eps_t, eps_t ~ N(0,H_t) H_t = variance matrix of psuedo-observations after the Laplace approximation 
       }
     } else {
       for(t in 1:n) {
@@ -96,7 +98,10 @@ functions {
     return loglik;
   }
   
-  
+  /*
+
+  */
+
   // univariate Kalman filter & smoother for non-gaussian model, 
   // returns the log-likelihood of the corresponding approximating Gaussian model
   // and a extra correction term
@@ -335,6 +340,8 @@ generated quantities{
       if(k_rw2 > 0) nu_array[1:k_rw2,1:n,j] = to_array_2d(nu_j);
       
       w[j] = -sum(loglik[obs_idx,2]);
+
+      /* add something here */ 
       if (distribution == 1) {
         for(t in 1:n) {
           real xbeta_tmp = xbeta[t] + dot_product(xreg_rw[,t], beta_j[1:k,t]);
