@@ -37,7 +37,7 @@ generated quantities {
   for (n in 1:N) {
     real eta_n = dot_product(row(X, n), beta);
     log_lik[n] = poisson_log_lpmf(y[n] | eta_n);         
-    y_rep[n]   = poisson_log_rng(eta_n);              
+    y_rep[n] = poisson_log_rng(eta_n);              
   }
 }
 
