@@ -27,7 +27,7 @@ parameters {
 
 transformed parameters {
   vector[N] eta = to_vector(X * beta);
-  vector[N] mu  = exp(eta);
+  vector[N] mu = exp(eta);
 }
 
 
